@@ -109,7 +109,7 @@ void ext2_evict_inode(struct inode * inode)
 }
 
 typedef struct {
-	__le32	*p; // zp: key对应磁盘块在内存中的指针
+	__le32	*p; // zp: key对应磁盘块在内存中的指针，两种情况：（1）p是指向i_data[x]（2）p是指向间接块在内存中内容中的某个偏移，如：ext2_splice_branch中*(where->p + i ) = cpu_to_le32(current_block++);
 	__le32	key; // zp: 块号
 	struct buffer_head *bh; // zp: 对应key磁盘块
 } Indirect; // zp: Indirect有完整和不完整两种状态：完整是key不为0，而p指向key在内存中的地址；不完整是key为0，p所指的地方存的key还是0，内核需要找到一个空闲块号填充key
