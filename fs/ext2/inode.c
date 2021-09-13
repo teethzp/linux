@@ -112,7 +112,7 @@ typedef struct {
 	__le32	*p; // zp: key对应磁盘块在内存中的指针
 	__le32	key; // zp: 块号
 	struct buffer_head *bh; // zp: 对应key磁盘块
-} Indirect;
+} Indirect; // zp: Indirect有完整和不完整两种状态：完整是key不为0，而p指向key在内存中的地址；不完整是key为0，p所指的地方存的key还是0，内核需要找到一个空闲块号填充key
 
 static inline void add_chain(Indirect *p, struct buffer_head *bh, __le32 *v)
 {
@@ -232,7 +232,7 @@ static Indirect *ext2_get_branch(struct inode *inode,
 				 int depth,
 				 int *offsets,
 				 Indirect chain[4],
-				 int *err)
+				 int *err) // zp: 当数据块已分配则返回NULL，否则返回非完整的Indirect，即key是0
 {
 	struct super_block *sb = inode->i_sb;
 	Indirect *p = chain;
@@ -240,22 +240,22 @@ static Indirect *ext2_get_branch(struct inode *inode,
 
 	*err = 0;
 	/* i_data is not going away, no lock needed */
-	add_chain (chain, NULL, EXT2_I(inode)->i_data + *offsets);
+	add_chain (chain, NULL, EXT2_I(inode)->i_data + *offsets); // zp: add_chain是通过i_data来设置Indirect，Q:i_data是在哪里设置的？
 	if (!p->key)
 		goto no_block;
 	while (--depth) {
-		bh = sb_bread(sb, le32_to_cpu(p->key));
+		bh = sb_bread(sb, le32_to_cpu(p->key)); // zp: 第一层已经在磁盘上分配了
 		if (!bh)
 			goto failure;
 		read_lock(&EXT2_I(inode)->i_meta_lock);
 		if (!verify_chain(chain, p))
 			goto changed;
-		add_chain(++p, bh, (__le32*)bh->b_data + *++offsets);
+		add_chain(++p, bh, (__le32*)bh->b_data + *++offsets); // zp: 填充第二层的Indirect
 		read_unlock(&EXT2_I(inode)->i_meta_lock);
 		if (!p->key)
 			goto no_block;
 	}
-	return NULL;
+	return NULL; // zp: 说明数据块已经被分配过了，不用再分配了
 
 changed:
 	read_unlock(&EXT2_I(inode)->i_meta_lock);
