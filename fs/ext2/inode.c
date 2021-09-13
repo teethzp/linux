@@ -109,9 +109,9 @@ void ext2_evict_inode(struct inode * inode)
 }
 
 typedef struct {
-	__le32	*p;
-	__le32	key;
-	struct buffer_head *bh;
+	__le32	*p; // zp: key对应磁盘块在内存中的指针
+	__le32	key; // zp: 块号
+	struct buffer_head *bh; // zp: 对应key磁盘块
 } Indirect;
 
 static inline void add_chain(Indirect *p, struct buffer_head *bh, __le32 *v)
